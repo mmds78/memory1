@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flight Data Recall Trainer</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      padding: 20px;
+      background: #f0f0f0;
+    }
+    h1 { margin-bottom: 10px; }
+    .top-boxes {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-gap: 10px;
+      margin: 10px 0;
+    }
+    .box {
+      width: 120px;
+      height: 70px;
+      background: white;
+      border: 2px solid #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    .category-label {
+      font-weight: bold;
+      height: 20px;
+    }
+    .input-section {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    .category-buttons {
+      display: flex;
+      flex-direction: column;
+      margin-right: 10px;
+    }
+    .category-buttons button, .keypad button {
+      margin: 4px;
+      padding: 10px;
+      font-size: 16px;
+    }
+    .keypad {
+      flex-wrap: wrap;
+      max-width: 180px;
+      display: flex;
+    }
+    .keypad button {
+      width: 50px;
+    }
+    #submit-btn {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 18px;
+    }
+    .history {
+      margin-top: 20px;
+      max-width: 90%;
+      font-size: 14px;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Flight Data Recall</h1>
+  <div class="top-boxes">
+    <div class="box" id="boxALT"><div class="category-label">ALT</div><div id="valALT"></div></div>
+    <div class="box" id="boxH"><div class="category-label">H</div><div id="valH"></div></div>
+    <div class="box" id="boxS"><div class="category-label">S</div><div id="valS"></div></div>
+    <div class="box" id="boxR"><div class="category-label">R</div><div id="valR"></div></div>
+  </div>
+
+  <div class="input-section">
+    <div class="category-buttons">
+      <button onclick="storeInput('ALT')">A</button>
+      <button onclick="storeInput('H')">H</button>
+      <button onclick="storeInput('S')">S</button>
+      <button onclick="storeInput('R')">R</button>
+    </div>
+    <div class="keypad">
+      <button onclick="appendDigit(7)">7</button>
+      <button onclick="appendDigit(8)">8</button>
+      <button onclick="appendDigit(9)">9</button>
+      <button onclick="appendDigit(4)">4</button>
+      <button onclick="appendDigit(5)">5</button>
+      <button onclick="appendDigit(6)">6</button>
+      <button onclick="appendDigit(1)">1</button>
+      <button onclick="appendDigit(2)">2</button>
+      <button onclick="appendDigit(3)">3</button>
+      <button onclick="appendDigit(0)">0</button>
+      <button onclick="clearInput()">C</button>
+    </div>
+  </div>
+
+  <div>
+    <p>Current Input: <strong id="current-input"></strong></p>
+    <button id="submit-btn" onclick="finalSubmit()">Submit All</button>
+  </div>
+  <div>
+    <p id="feedback"></p>
+    <p id="score"></p>
+  </div>
+  <div class="history" id="history-log">
+    <strong>Previous Sessions:</strong>
+    <ul id="session-history"></ul>
+  </div>
+
+  <script>
+    let currentInput = "";
+    let answers = {};
+    let userInputs = {};
+    let score = 0;
+    let round = 0;
+    let expectedInputs = 3;
+
+    function getRandomValue(type) {
+      if (type === 'ALT') {
+        const altitudes = [];
+        for (let i = 2000; i <= 42000; i += 500) altitudes.push(i);
+        return altitudes[Math.floor(Math.random() * altitudes.length)];
+      }
+      if (type === 'H') {
+        const headings = [];
+        for (let i = 0; i <= 360; i += 5) headings.push(i.toString().padStart(3, '0'));
+        return headings[Math.floor(Math.random() * headings.length)];
+      }
+      if (type === 'S') {
+        const speeds = [];
+        for (let i = 0; i <= 500; i += 5) speeds.push(i);
+        return speeds[Math.floor(Math.random() * speeds.length)];
+      }
+      if (type === 'R') {
+        const middle = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+        const ending = Math.random() < 0.5 ? '0' : '5';
+        return parseInt('1' + middle + ending);
+      }
+    }
+
+    function appendDigit(d) {
+      currentInput += d;
+      document.getElementById('current-input').innerText = currentInput;
+    }
+
+    function clearInput() {
+      currentInput = "";
+      document.getElementById('current-input').innerText = "";
+    }
+
+    function storeInput(category) {
+      if (currentInput === "") return;
+      const val = category === 'H' ? currentInput.padStart(3, '0') : parseInt(currentInput);
+      userInputs[category] = val;
+      document.getElementById('val' + category).innerText = val;
+      document.getElementById('feedback').innerText = `Stored ${val} in ${category}`;
+      clearInput();
+    }
+
+    function finalSubmit() {
+      if (Object.keys(userInputs).length !== expectedInputs) {
+        document.getElementById('feedback').innerText = "❗ Please enter all three values before submitting.";
+        return;
+      }
+
+      let correct = 0;
+      for (const cat in userInputs) {
+        if (userInputs[cat] == answers[cat]) correct++;
+      }
+      score += correct;
+      document.getElementById('feedback').innerText = `✅ ${correct} correct this round.`;
+
+      if (++round < 10) {
+        setTimeout(startRound, 2000);
+      } else {
+        const finalScoreText = `🎯 Final Score: ${score}/30 (${Math.round(score / 30 * 100)}%)`;
+        document.getElementById('score').innerText = finalScoreText;
+        const historyEntry = document.createElement('li');
+        historyEntry.innerText = finalScoreText;
+        document.getElementById('session-history').prepend(historyEntry);
+        score = 0;
+        round = 0;
+        setTimeout(startRound, 4000);
+      }
+    }
+
+    function startRound() {
+      document.getElementById('feedback').innerText = "";
+      document.getElementById('score').innerText = "";
+      const cats = ['ALT', 'H', 'S', 'R'];
+      const selected = [];
+      while (selected.length < 3) {
+        const randomCat = cats[Math.floor(Math.random() * cats.length)];
+        if (!selected.includes(randomCat)) selected.push(randomCat);
+      }
+      answers = {};
+      userInputs = {};
+
+      cats.forEach(cat => {
+        document.getElementById('val' + cat).innerText = "";
+      });
+
+      cats.forEach(cat => {
+        if (selected.includes(cat)) {
+          answers[cat] = getRandomValue(cat);
+          document.getElementById('val' + cat).innerText = answers[cat];
+        } else {
+          document.getElementById('val' + cat).innerText = "";
+        }
+      });
+
+      setTimeout(() => {
+        selected.forEach(cat => {
+          document.getElementById('val' + cat).innerText = "";
+        });
+      }, 10000);
+    }
+
+    startRound();
+  </script>
+</body>
+</html>
